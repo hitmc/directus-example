@@ -26,11 +26,14 @@ class AfterUpdateHook
 
     function __invoke($table, $data)
     {
+//        var_dump($table, $data);die;
+        $this->initClient();
+        $res = $this->client->getItem($table, $data['id']);
+
         switch ($table) {
-            case 'car_translation':
+            case 'car':
                 $this->initClient();
                 return $this->handleCarTranslation($data);
-                break;
         }
     }
 
@@ -42,27 +45,31 @@ class AfterUpdateHook
     {
         if (empty($data['id'])) return;
         $id = $data['id'];
-        $recordCurrent = $this->client->getItem('car_translation', $id);
-        if (empty($recordCurrent) || empty($recordCurrent['car_id'])) return;
+        $recordCurrent = $this->client->getItem('car', $id);
+        if (empty($recordCurrent)) return;
 
         $records = $this->client->getItems('car_translation', [
             'filters' => [
-                'car_id' => $recordCurrent['car_id'],
+                'car_id' => $id,
             ]
         ]);
 
         if (!empty($records)) {
             foreach ($records as $record) {
                 $info = $record->getData();
-                if (!empty($info['language_code']) && !empty($info['approved']) && $info['approved'] === 1) {
-                    if ($info['language_code'] == 'ru') {
-                        $this->transferDataForRuAndTest($record, 'ru-test');
-                    } elseif ($info['language_code'] == 'ru-test') {
-                        $this->transferDataForRuAndTest($record, 'ru');
-                    }
+                if ($recordCurrent['approved_main'] === 1 && $info['language_code'] == 'ru') {
+                    $this->transferDataForRuAndTest($record, 'ru-test');
+                } elseif ($recordCurrent['approved_test'] === 1 && $info['language_code'] == 'ru-test') {
+                    $this->transferDataForRuAndTest($record, 'ru');
                 }
             }
         }
+
+        // возвращаем флаг одобрения в выключенное состояние
+        $this->client->updateItem('car', $recordCurrent['id'], [
+            'approved_main' => 0,
+            'approved_test' => 0,
+        ]);
     }
 
     /**
@@ -90,10 +97,5 @@ class AfterUpdateHook
         }
 
         $res = $this->client->updateItem('car_translation', $recordSwap['id'], $prepareUpdateData);
-
-        // возвращаем флаг одобрения в выключенное состояние
-        $this->client->updateItem('car_translation', $record['id'], ['approved' => 0]);
-//        echo"<pre>";var_dump($res);die;
-
     }
 }
