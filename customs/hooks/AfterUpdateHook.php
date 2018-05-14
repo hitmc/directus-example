@@ -27,8 +27,8 @@ class AfterUpdateHook
     function __invoke($table, $data)
     {
 //        var_dump($table, $data);die;
-        $this->initClient();
-        $res = $this->client->getItem($table, $data['id']);
+        //$this->initClient();
+        //$res = $this->client->getItem($table, $data['id']);
 
         switch ($table) {
             case 'car':
