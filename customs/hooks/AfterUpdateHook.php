@@ -9,19 +9,24 @@ namespace Directus\Customs\Hooks;
 class AfterUpdateHook
 {
     private $client;
+    /**
+     * @var Directus\Database\Connection
+     */
+    private $adapter;
 
     /**
      * Инициализация клиента
      */
     private function initClient()
     {
+        $config = \Directus\Bootstrap::get('config');
         $this->client = \Directus\SDK\ClientFactory::create([
             'database' => [
                 'database' => DB_NAME,
                 'username' => DB_USER,
                 'password' => DB_PASSWORD,
             ]
-        ]);
+        ] + $config->toArray());
     }
 
     function __invoke($table, $data)
@@ -45,6 +50,7 @@ class AfterUpdateHook
     {
         if (empty($data['id'])) return;
         $id = $data['id'];
+
         $recordCurrent = $this->client->getItem('car', $id);
         if (empty($recordCurrent)) return;
 
