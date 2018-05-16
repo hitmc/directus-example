@@ -37,6 +37,7 @@ class AfterUpdateHook
             return false;
         }
 
+        //если изменение в таблице, у которой есть связь с _translation
         if(array_key_exists($table, $tables_with_translate)){
             return $this->handleTranslation($table, $data, $tables_with_translate[$table]);
         }
